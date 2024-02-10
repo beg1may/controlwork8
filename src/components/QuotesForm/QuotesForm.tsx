@@ -1,11 +1,15 @@
-import React, {useState} from 'react';
-import {Quote} from "../../types";
+import React, { useState } from 'react';
+import { Quote } from "../../types";
+import axiosApi from "../../axiosApi";
+import { v4 as uuidv4 } from 'uuid';
 
 interface Props {
     onSubmit: (quote: Quote) => void
 }
 
-const QuotesForm:React.FC<Props> = ({onSubmit}) => {
+const QuotesForm: React.FC<Props> = ({ onSubmit }) => {
+
+    const [loading, setLoading] = useState(false);
 
     const [quote, setQuote] = useState({
         category: '',
@@ -20,19 +24,28 @@ const QuotesForm:React.FC<Props> = ({onSubmit}) => {
         }));
     };
 
-    const onFormSubmit = (e: React.FormEvent) => {
+    const onFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({
-            id: Math.random().toString(),
-            ...quote
-        });
+        setLoading(true);
+
+        const newQuote: Quote = {
+            id: uuidv4(),
+            ...quote,
+        };
+
+        try {
+            await axiosApi.post('/quotes.json', newQuote);
+            onSubmit(newQuote);
+        }  finally {
+            setLoading(false);
+        }
     };
 
     return (
         <form onSubmit={onFormSubmit}>
-        <h4>Submit new quote</h4>
-            <div className="form-group">
-                <label htmlFor="category">Category</label>
+            <h2>Submit new quote</h2>
+            <div className="form-group my-3">
+                <label htmlFor="category" className="mb-2">Category</label>
                 <select
                     name="category"
                     id="category"
@@ -48,19 +61,19 @@ const QuotesForm:React.FC<Props> = ({onSubmit}) => {
                     <option value="Motivational">Motivational</option>
                 </select>
             </div>
-            <div className="form-group">
-                <label htmlFor="author">Author</label>
+            <div className="form-group my-3">
+                <label htmlFor="author" className="mb-2">Author</label>
                 <input
-                type="text"
-                name="author"
-                id="author"
-                className="form-control"
-                value={quote.author}
-                onChange={changeQuote}
+                    type="text"
+                    name="author"
+                    id="author"
+                    className="form-control"
+                    value={quote.author}
+                    onChange={changeQuote}
                 />
             </div>
-            <div className="form-group">
-                <label htmlFor="text">Text</label>
+            <div className="form-group my-3">
+                <label htmlFor="text" className="mb-2">Text</label>
                 <textarea
                     name="text"
                     id="text"
@@ -69,7 +82,9 @@ const QuotesForm:React.FC<Props> = ({onSubmit}) => {
                     onChange={changeQuote}
                 />
             </div>
-            <button type="submit" className="btn btn-outline-dark mt-3">Save</button>
+            <button type="submit" className="btn btn-outline-dark mt-3" disabled={loading}>
+                {loading ? 'Saving...' : 'Save'}
+            </button>
         </form>
     );
 };
